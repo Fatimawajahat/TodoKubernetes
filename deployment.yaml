@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-app-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-app
+  template:
+    metadata:
+      labels:
+        app: todo-app
+    spec:
+      containers:
+        - name: todo-backend
+          image: spideyfati/todo-backend:v2  # Make sure this is your updated image
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            - name: MONGO_URI
+              value: "mongodb://mongo-service:27017/todo-app"
+          readinessProbe:
+            httpGet:
+              path: /tasks
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+        - name: todo-frontend
+          image: spideyfati/todo-frontend:v2  # This will be your new frontend image
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80  # Changed from 3000 to 80 for nginx
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
