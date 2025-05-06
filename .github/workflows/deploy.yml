@@ -1,0 +1,40 @@
+name: Build and Deploy to Minikube
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-deploy:
+    runs-on: self-hosted  
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3  
+
+    - name: Set up Docker to use Minikube's environment
+      run: |
+        echo "Configuring Docker to use Minikube's daemon..."
+        eval $(minikube docker-env)  # Set Docker to Minikube's Docker environment
+
+    - name: Build Docker image for Backend
+      run: |
+        docker build -t spideyfati/todo-backend:v2 .  
+
+    - name: Build Docker image for Frontend
+      run: |
+        docker build -t spideyfati/todo-frontend:v2 .  
+    - name: Login to Docker Hub
+      run: echo "fati_2004" | docker login -u "spideyfati" --password-stdin  
+
+    - name: Push Docker images to Docker Hub
+      run: |
+        docker push spideyfati/todo-backend:v2  # Push backend image to Docker Hub
+        docker push spideyfati/todo-frontend:v2  # Push frontend image to Docker Hub
+
+    - name: Deploy to Minikube
+      run: |
+        kubectl apply -f mongo.yaml  
+        kubectl apply -f deployment.yaml  
+        kubectl apply -f service.yaml  
