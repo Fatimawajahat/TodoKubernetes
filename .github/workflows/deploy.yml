@@ -7,47 +7,42 @@ on:
 
 jobs:
   build-deploy:
-    runs-on: ubuntu-latest  # Use a GitHub-hosted Ubuntu runner
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3  # This step checks out your code from the GitHub repository
+      uses: actions/checkout@v3
 
-    - name: Set up Docker
-      run: |
-        sudo apt-get update
-        sudo apt-get remove -y containerd  # Remove the conflicting containerd package
-        sudo apt-get install -y docker.io  # Install Docker on the GitHub runner
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+      
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: spideyfati
+        password: fati_2004  # Use secrets for credentials
+
+    - name: Build and push Backend Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./backend  # Adjust path to your backend code
+        push: true
+        tags: spideyfati/todo-backend:v2
+
+    - name: Build and push Frontend Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./frontend  # Adjust path to your frontend code
+        push: true
+        tags: spideyfati/todo-frontend:v2
 
     - name: Set up Minikube
-      run: |
-        curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-        sudo mv minikube-linux-amd64 /usr/local/bin/minikube
-        sudo chmod +x /usr/local/bin/minikube  # Install Minikube on the GitHub runner
-
-    - name: Start Minikube
-      run: |
-        minikube start --driver=docker  # Start Minikube
-
-    - name: Set up Docker to use Minikube's environment
-      run: |
-        eval $(minikube -p minikube docker-env)  # Configures Docker to use Minikube's Docker daemon
-
-    - name: Build Docker images for Backend and Frontend
-      run: |
-        docker build -t spideyfati/todo-backend:v2 .  # Build backend Docker image
-        docker build -t spideyfati/todo-frontend:v2 .  # Build frontend Docker image
-
-    - name: Login to Docker Hub
-      run: echo "fati_2004" | docker login -u "spideyfati" --password-stdin  
-
-    - name: Push Docker images to Docker Hub
-      run: |
-        docker push spideyfati/todo-backend:v2  # Push backend image to Docker Hub
-        docker push spideyfati/todo-frontend:v2  # Push frontend image to Docker Hub
+      uses: medyagh/setup-minikube@latest
 
     - name: Deploy to Minikube
       run: |
-        kubectl apply -f mongo.yaml  # Deploy MongoDB
-        kubectl apply -f deployment.yaml  # Deploy the todo app backend and frontend
-        kubectl apply -f service.yaml  # Deploy the services
+        minikube status
+        kubectl apply -f mongo.yaml
+        kubectl apply -f deployment.yaml
+        kubectl apply -f service.yaml
+        kubectl get pods -A
