@@ -3,28 +3,40 @@ name: Build and Deploy to Minikube
 on:
   push:
     branches:
-      - master
+      - master  # Trigger the workflow on push to the main branch
 
 jobs:
   build-deploy:
-    runs-on: self-hosted  
+    runs-on: ubuntu-latest  # Use a GitHub-hosted Ubuntu runner
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3  
+      uses: actions/checkout@v3  # This step checks out your code from the GitHub repository
+
+    - name: Set up Docker
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y docker.io  # Install Docker on the GitHub runner
+
+    - name: Set up Minikube
+      run: |
+        curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        sudo mv minikube-linux-amd64 /usr/local/bin/minikube
+        sudo chmod +x /usr/local/bin/minikube  # Install Minikube on the GitHub runner
+
+    - name: Start Minikube
+      run: |
+        minikube start --driver=docker  # Start Minikube
 
     - name: Set up Docker to use Minikube's environment
       run: |
-        echo "Configuring Docker to use Minikube's daemon..."
-        eval $(minikube docker-env)  # Set Docker to Minikube's Docker environment
+        eval $(minikube -p minikube docker-env)  # Configures Docker to use Minikube's Docker daemon
 
-    - name: Build Docker image for Backend
+    - name: Build Docker images for Backend and Frontend
       run: |
-        docker build -t spideyfati/todo-backend:v2 .  
+        docker build -t spideyfati/todo-backend:v2 .  # Build backend Docker image
+        docker build -t spideyfati/todo-frontend:v2 .  # Build frontend Docker image
 
-    - name: Build Docker image for Frontend
-      run: |
-        docker build -t spideyfati/todo-frontend:v2 .  
     - name: Login to Docker Hub
       run: echo "fati_2004" | docker login -u "spideyfati" --password-stdin  
 
@@ -35,6 +47,6 @@ jobs:
 
     - name: Deploy to Minikube
       run: |
-        kubectl apply -f mongo.yaml  
-        kubectl apply -f deployment.yaml  
-        kubectl apply -f service.yaml  
+        kubectl apply -f mongo.yaml  # Deploy MongoDB
+        kubectl apply -f deployment.yaml  # Deploy the todo app backend and frontend
+        kubectl apply -f service.yaml  # Deploy the services
