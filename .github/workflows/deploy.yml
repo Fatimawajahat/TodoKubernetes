@@ -20,19 +20,19 @@ jobs:
       uses: docker/login-action@v2
       with:
         username: spideyfati
-        password: fati_2004  # Use secrets for credentials
+        password: fati_2004  
 
     - name: Build and push Backend Docker image
       uses: docker/build-push-action@v4
       with:
-        context: ./backend  # Adjust path to your backend code
+        context: ./Backend 
         push: true
         tags: spideyfati/todo-backend:v2
 
     - name: Build and push Frontend Docker image
       uses: docker/build-push-action@v4
       with:
-        context: ./frontend  # Adjust path to your frontend code
+        context: ./frontend  
         push: true
         tags: spideyfati/todo-frontend:v2
 
